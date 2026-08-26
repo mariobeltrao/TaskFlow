@@ -25,7 +25,6 @@ while True:
     mostrar_menu()
 
     opcao = input("Escolha: ")
-
     if opcao == "1":
         titulo = input("Título: ")
         materia = input("Matéria: ")
