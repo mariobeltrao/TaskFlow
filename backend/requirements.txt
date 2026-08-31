@@ -7,4 +7,8 @@ pyjwt>=2.10,<3
 argon2-cffi>=23.1,<26
 python-multipart>=0.0.20,<1
 email-validator>=2.2,<3
-
+cryptography>=44,<47
+google-api-python-client>=2.160,<3
+google-auth>=2.38,<3
+google-auth-oauthlib>=1.2,<2
+tzdata>=2025.2

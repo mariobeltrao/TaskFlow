@@ -2,7 +2,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import TaskPriority, TaskStatus
+from app.models.enums import TaskPriority, TaskSource, TaskStatus
 
 
 class TaskCreate(BaseModel):
@@ -33,6 +33,10 @@ class TaskResponse(TaskCreate):
     created_by: int
     created_at: datetime
     updated_at: datetime
+    source: TaskSource
+    external_id: str | None
+    external_calendar_id: str | None
+    external_updated_at: datetime | None
 
 
 class TaskPage(BaseModel):

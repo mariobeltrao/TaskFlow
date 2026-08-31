@@ -1,7 +1,8 @@
 from functools import lru_cache
+from typing import Annotated
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -11,7 +12,17 @@ class Settings(BaseSettings):
     secret_key: str = "development-only-change-me"
     access_token_expire_minutes: int = 480
     cookie_secure: bool = False
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
+    frontend_url: str = "http://localhost:5173"
+    app_timezone: str = "America/Fortaleza"
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/integrations/google-calendar/callback"
+    google_calendar_webhook_url: str = ""
+    google_calendar_webhook_token: str = ""
+    google_token_encryption_key: str = ""
+    google_calendar_sync_enabled: bool = False
+    google_calendar_sync_interval_minutes: int = 5
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

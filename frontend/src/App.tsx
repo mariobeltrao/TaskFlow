@@ -1,21 +1,23 @@
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import {ArrowUpRight,BarChart3,CalendarDays,CheckCircle2,ChevronLeft,ChevronRight,Clock3,LayoutDashboard,ListTodo,LogOut,Menu,Plus,Search,TrendingUp,X} from 'lucide-react';
+import {ArrowUpRight,BarChart3,CalendarDays,CheckCircle2,ChevronLeft,ChevronRight,Clock3,LayoutDashboard,Link2,ListTodo,LogOut,Menu,Plus,Search,TrendingUp,X} from 'lucide-react';
 import {Brand} from './components/Brand';
 import {TaskCard} from './components/TaskCard';
 import {TaskForm} from './components/TaskForm';
 import {Landing} from './pages/Landing';
 import {Login} from './pages/Login';
+import {MemberFirstAccess} from './pages/MemberFirstAccess';
+import {GoogleCalendarIntegration} from './pages/GoogleCalendarIntegration';
 import {api} from './services/api';
 import type {Summary,Task,TaskInput,User} from './types';
 import {formatDate,localDate} from './utils/dates';
 
-type View='overview'|'all'|'upcoming'|'completed'|'calendar'|'stats';
+type View='overview'|'all'|'upcoming'|'completed'|'calendar'|'stats'|'integrations';
 const nav:[View,string,React.ElementType][]=[['overview','Visão Geral',LayoutDashboard],['all','Todas as Tarefas',ListTodo],['upcoming','Próximas',Clock3],['completed','Concluídas',CheckCircle2],['calendar','Calendário',CalendarDays],['stats','Estatísticas',BarChart3]];
 const go=(path:string)=>{history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))};
 
 export default function App(){
   const[user,setUser]=useState<User|null>(null);const[loading,setLoading]=useState(true);const[path,setPath]=useState(location.pathname);
-  const[tasks,setTasks]=useState<Task[]>([]);const[summary,setSummary]=useState<Summary|null>(null);const[view,setView]=useState<View>('overview');
+  const[tasks,setTasks]=useState<Task[]>([]);const[summary,setSummary]=useState<Summary|null>(null);const[view,setView]=useState<View>(()=>new URLSearchParams(location.search).get('view')==='integrations'?'integrations':'overview');
   const[search,setSearch]=useState('');const[editing,setEditing]=useState<Task|null|undefined>(undefined);const[menu,setMenu]=useState(false);const[month,setMonth]=useState(()=>new Date());const[error,setError]=useState('');
   const load=useCallback(async()=>{if(!user)return;const suffix=view==='upcoming'?'?upcoming=true':view==='completed'?'?status=COMPLETED':'';try{const[t,s]=await Promise.all([api.tasks(suffix),api.summary()]);setTasks(t.items);setSummary(s);setError('')}catch(e){setError(e instanceof Error?e.message:'Erro ao carregar')}},[user,view]);
   useEffect(()=>{const update=()=>setPath(location.pathname);window.addEventListener('popstate',update);return()=>window.removeEventListener('popstate',update)},[]);
@@ -25,11 +27,12 @@ export default function App(){
   useEffect(()=>{void load()},[load]);
   const shown=useMemo(()=>tasks.filter(t=>t.title.toLowerCase().includes(search.toLowerCase())),[tasks,search]);
   const isAdmin=user?.role==='ADMIN';
+  const visibleNav:[View,string,React.ElementType][]=isAdmin?[...nav,['integrations','Integrações',Link2]]:nav;
   const save=async(data:TaskInput)=>{if(editing)await api.update(editing.id,data);else await api.create(data);await load()};
   const remove=async(id:number)=>{if(confirm('Excluir esta tarefa?')){await api.remove(id);await load()}};
   const complete=async(t:Task)=>{await api.update(t.id,{status:t.status==='COMPLETED'?'PENDING':'COMPLETED'});await load()};
   if(loading)return <div className="splash"><Brand/><span>Preparando seu fluxo…</span></div>;
-  if(!user){if(path==='/login'||path.startsWith('/app'))return <Login onLogin={u=>{setUser(u);go('/app')}} onBack={()=>go('/')}/>;return <Landing onLogin={()=>go('/login')}/>}
+  if(!user){if(path==='/first-access')return <MemberFirstAccess onBack={()=>go('/login')} onComplete={()=>go('/login')}/>;if(path==='/login'||path.startsWith('/app'))return <Login onLogin={u=>{setUser(u);go('/app')}} onBack={()=>go('/')} onFirstAccess={()=>go('/first-access')}/>;return <Landing onLogin={()=>go('/login')}/>}
 
   const pending=shown.find(t=>t.status==='PENDING');
   const today=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
@@ -37,17 +40,17 @@ export default function App(){
     <aside className={menu?'open':''}>
       <div className="sidebar-brand"><Brand compact/><button className="mobile-close icon-button" aria-label="Fechar menu" onClick={()=>setMenu(false)}><X/></button></div>
       <div className="sidebar-label">Seu espaço</div>
-      <nav aria-label="Área autenticada">{nav.map(([key,label,Icon])=><button key={key} className={view===key?'active':''} onClick={()=>{setView(key);setMenu(false)}}><Icon/>{label}{view===key&&<span/>}</button>)}</nav>
+      <nav aria-label="Área autenticada">{visibleNav.map(([key,label,Icon])=><button key={key} className={view===key?'active':''} onClick={()=>{setView(key);setMenu(false)}}><Icon/>{label}{view===key&&<span/>}</button>)}</nav>
       <div className="sidebar-note"><span>FLUXO DA SEMANA</span><strong>{summary?.completed_tasks??0} concluídas</strong><div><i style={{width:`${summary?.total_tasks?summary.completed_tasks/summary.total_tasks*100:0}%`}}/></div></div>
-      <div className="profile"><div className="avatar">{user.name.slice(0,2).toUpperCase()}</div><div><b>{user.name}</b><small>{isAdmin?'Administrador':'Membro'}</small></div><button className="icon-button" aria-label="Sair" title="Sair" onClick={async()=>{await api.logout();setUser(null);go('/login')}}><LogOut/></button></div>
+      <div className="profile"><div className="avatar">{user.name.slice(0,2).toUpperCase()}</div><div><b>{user.name}</b><small>{isAdmin?'Administrador':'Aluno'}</small></div><button className="icon-button" aria-label="Sair" title="Sair" onClick={async()=>{await api.logout();setUser(null);go('/login')}}><LogOut/></button></div>
     </aside>
     {menu&&<button className="menu-scrim" aria-label="Fechar menu" onClick={()=>setMenu(false)}/>} 
     <main className="content">
-      <header className="app-header"><button className="menu-button icon-button" aria-label="Abrir menu" onClick={()=>setMenu(true)}><Menu/></button><div><span className="eyebrow">{today}</span><h1>{view==='overview'?<>Olá, {user.name.split(' ')[0]}.</>:nav.find(n=>n[0]===view)?.[1]}</h1></div>{isAdmin&&<button className="button button-ink" onClick={()=>setEditing(null)}><Plus/> Nova tarefa</button>}</header>
+      <header className="app-header"><button className="menu-button icon-button" aria-label="Abrir menu" onClick={()=>setMenu(true)}><Menu/></button><div><span className="eyebrow">{today}</span><h1>{view==='overview'?<>Olá, {user.name.split(' ')[0]}.</>:visibleNav.find(n=>n[0]===view)?.[1]??'Visão Geral'}</h1></div>{isAdmin&&view!=='integrations'&&<button className="button button-ink" onClick={()=>setEditing(null)}><Plus/> Nova tarefa</button>}</header>
       {error&&<div className="error-banner" role="alert">{error}<button aria-label="Fechar aviso" onClick={()=>setError('')}>×</button></div>}
       {view==='overview'&&<Overview summary={summary} pending={pending}/>} 
-      {view==='calendar'?<Calendar tasks={shown} month={month} setMonth={setMonth}/>:view==='stats'?<Statistics summary={summary}/>:<section className="tasks-section">
-        <div className="section-head"><div><span className="eyebrow">{view==='overview'?'Organize sua semana':'Seu mural'}</span><h2>{view==='overview'?'Próximas entregas':nav.find(n=>n[0]===view)?.[1]}</h2></div><label className="search"><Search/><input aria-label="Buscar tarefa" placeholder="Buscar uma tarefa…" value={search} onChange={e=>setSearch(e.target.value)}/></label></div>
+      {view==='integrations'&&isAdmin?<GoogleCalendarIntegration/>:view==='calendar'?<Calendar tasks={shown} month={month} setMonth={setMonth}/>:view==='stats'?<Statistics summary={summary}/>:<section className="tasks-section">
+        <div className="section-head"><div><span className="eyebrow">{view==='overview'?'Organize sua semana':'Seu mural'}</span><h2>{view==='overview'?'Próximas entregas':visibleNav.find(n=>n[0]===view)?.[1]}</h2></div><label className="search"><Search/><input aria-label="Buscar tarefa" placeholder="Buscar uma tarefa…" value={search} onChange={e=>setSearch(e.target.value)}/></label></div>
         <div className="task-list">{shown.length?shown.slice(0,view==='overview'?6:100).map(t=><TaskCard key={t.id} task={t} isAdmin={isAdmin} onEdit={setEditing} onDelete={remove} onComplete={complete}/>):<div className="empty"><CheckCircle2/><h3>Tudo limpo por aqui.</h3><p>Nenhuma tarefa corresponde a esta visualização.</p></div>}</div>
       </section>}
     </main>

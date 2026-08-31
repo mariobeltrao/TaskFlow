@@ -19,3 +19,4 @@ class User(Base):
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )
     tasks = relationship("Task", back_populates="creator")
+    member_invites = relationship("MemberInvite", back_populates="creator")

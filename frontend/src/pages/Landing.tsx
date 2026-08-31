@@ -1,6 +1,7 @@
 import {useEffect,useRef} from 'react';
 import {ArrowDown,ArrowRight,CalendarDays,Check,Clock3,Flag,Plus,Sparkles} from 'lucide-react';
 import {Brand} from '../components/Brand';
+import {Footer} from '../components/Footer';
 
 const steps=[
   ['01','Adicione','Registre atividades, provas, trabalhos e compromissos.',Plus],
@@ -77,6 +78,6 @@ export function Landing({onLogin}:{onLogin:()=>void}){
 
       <section className="final-cta"><Brand/><div><span className="kicker">Seu mural está pronto</span><h2>O que importa<br/>já pode fluir.</h2></div><button className="button button-sun" onClick={onLogin}>Entrar no TaskFlow <ArrowRight/></button></section>
     </main>
-    <footer><Brand compact/><p>Organização, movimento e clareza.</p><span>TaskFlow · 2026</span></footer>
+    <Footer/>
   </div>;
 }

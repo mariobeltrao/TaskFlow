@@ -16,3 +16,8 @@ class TaskPriority(StrEnum):
 class TaskStatus(StrEnum):
     PENDING = "PENDING"
     COMPLETED = "COMPLETED"
+
+
+class TaskSource(StrEnum):
+    MANUAL = "MANUAL"
+    GOOGLE_CALENDAR = "GOOGLE_CALENDAR"
