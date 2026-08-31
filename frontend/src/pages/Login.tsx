@@ -1,2 +1,34 @@
-import {useState} from 'react'; import {ArrowRight,LockKeyhole} from 'lucide-react'; import {api} from '../services/api'; import type {User} from '../types';
-export function Login({onLogin}:{onLogin:(u:User)=>void}){const[email,setEmail]=useState('');const[password,setPassword]=useState('');const[error,setError]=useState('');const submit=async(e:React.FormEvent)=>{e.preventDefault();setError('');try{onLogin(await api.login(email,password))}catch(err){setError(err instanceof Error?err.message:'Falha no login')}};return <main className="login-page"><section className="login-brand"><div className="logo-mark">TF</div><h1>Organize hoje.<br/><span>Conquiste amanhã.</span></h1><p>Seus prazos acadêmicos em um só lugar, com clareza para decidir o que vem primeiro.</p></section><form className="login-card" onSubmit={submit}><div className="login-icon"><LockKeyhole/></div><span className="eyebrow">Bem-vindo ao TaskFlow</span><h2>Acesse seu mural</h2><label>E-mail<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com"/></label><label>Senha<input type="password" required minLength={8} autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha"/></label>{error&&<p className="form-error" role="alert">{error}</p>}<button className="primary login-button">Entrar <ArrowRight size={18}/></button></form></main>}
+import {useState} from 'react';
+import {ArrowLeft,ArrowRight,CalendarDays,Check,LockKeyhole} from 'lucide-react';
+import {Brand} from '../components/Brand';
+import {api} from '../services/api';
+import type {User} from '../types';
+
+export function Login({onLogin,onBack}:{onLogin:(u:User)=>void;onBack:()=>void}){
+  const[email,setEmail]=useState('');
+  const[password,setPassword]=useState('');
+  const[error,setError]=useState('');
+  const[busy,setBusy]=useState(false);
+  const submit=async(e:React.FormEvent)=>{
+    e.preventDefault();setError('');setBusy(true);
+    try{onLogin(await api.login(email,password))}catch(err){setError(err instanceof Error?err.message:'Falha no login')}finally{setBusy(false)}
+  };
+  return <main className="login-page page-enter">
+    <button className="login-back" onClick={onBack}><ArrowLeft/> Voltar ao início</button>
+    <section className="login-visual">
+      <Brand/>
+      <div><span className="kicker">Bem-vindo de volta</span><h1>Seu fluxo<br/>continua <em>aqui.</em></h1><p>Entre para ver o que merece sua atenção hoje.</p></div>
+      <div className="login-paper"><CalendarDays/><span><small>HOJE · 09:30</small><b>Revisar apresentação</b></span><i><Check/></i></div>
+      <span className="login-sticker">um passo<br/>de cada vez</span>
+    </section>
+    <section className="login-form-wrap">
+      <form className="login-card" onSubmit={submit}>
+        <span className="login-icon"><LockKeyhole/></span><span className="kicker">Acesso ao mural</span><h2>Entre na sua conta</h2><p className="login-helper">Use suas credenciais para continuar.</p>
+        <label htmlFor="email">E-mail</label><input id="email" type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="voce@exemplo.com"/>
+        <label htmlFor="password">Senha</label><input id="password" type="password" required minLength={8} autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha"/>
+        {error&&<p className="form-error" role="alert">{error}</p>}
+        <button className="button button-ink login-button" disabled={busy}>{busy?'Entrando…':<>Entrar <ArrowRight/></>}</button>
+      </form>
+    </section>
+  </main>;
+}
