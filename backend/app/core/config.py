@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     google_token_encryption_key: str = ""
     google_calendar_sync_enabled: bool = False
     google_calendar_sync_interval_minutes: int = 5
+    classroom_bridge_token: str = ""
+    classroom_bridge_admin_email: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

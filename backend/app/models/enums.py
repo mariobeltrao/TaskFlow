@@ -21,3 +21,4 @@ class TaskStatus(StrEnum):
 class TaskSource(StrEnum):
     MANUAL = "MANUAL"
     GOOGLE_CALENDAR = "GOOGLE_CALENDAR"
+    CLASSROOM_BRIDGE = "CLASSROOM_BRIDGE"

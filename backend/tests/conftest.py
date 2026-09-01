@@ -4,6 +4,8 @@ os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["SECRET_KEY"] = "test-secret-not-for-production-use-only-123456789"
 os.environ["GOOGLE_TOKEN_ENCRYPTION_KEY"] = "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
 os.environ["GOOGLE_CALENDAR_WEBHOOK_TOKEN"] = "test-webhook-token"
+os.environ["CLASSROOM_BRIDGE_TOKEN"] = "test-bridge-token"
+os.environ["CLASSROOM_BRIDGE_ADMIN_EMAIL"] = "admin@test.com"
 
 import pytest
 from fastapi.testclient import TestClient
