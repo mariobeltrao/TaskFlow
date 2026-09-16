@@ -16,6 +16,8 @@ vite.config.d.ts
 *.sqlite
 *.sqlite3
 coverage/
+playwright-report/
+test-results/
 .coverage
 .pytest_cache/
 .ruff_cache/

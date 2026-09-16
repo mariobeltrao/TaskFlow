@@ -11,9 +11,9 @@ export function Login({onLogin,onBack,onFirstAccess}:{onLogin:(u:User)=>void;onB
   const[error,setError]=useState('');
   const[busy,setBusy]=useState(false);
   const[accessType,setAccessType]=useState<'student'|'admin'>('student');
-  const submit=async(e:React.FormEvent)=>{
+  const submit=(e:React.FormEvent)=>{
     e.preventDefault();setError('');setBusy(true);
-    try{onLogin(await api.login(email,password))}catch(err){setError(err instanceof Error?err.message:'Falha no login')}finally{setBusy(false)}
+    api.login(email,password).then(onLogin).catch(err=>setError(err instanceof Error?err.message:'Falha no login')).finally(()=>{setPassword('');setBusy(false)});
   };
   return <main className="login-page page-enter">
     <button className="login-back" onClick={onBack}><ArrowLeft/> Voltar ao início</button>

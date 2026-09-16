@@ -6,6 +6,7 @@ os.environ["GOOGLE_TOKEN_ENCRYPTION_KEY"] = "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA
 os.environ["GOOGLE_CALENDAR_WEBHOOK_TOKEN"] = "test-webhook-token"
 os.environ["CLASSROOM_BRIDGE_TOKEN"] = "test-bridge-token"
 os.environ["CLASSROOM_BRIDGE_ADMIN_EMAIL"] = "admin@test.com"
+os.environ["ENABLE_GOOGLE_INTEGRATION"] = "true"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -17,6 +18,7 @@ from app.db.session import Base, get_db
 from app.main import app
 from app.models.enums import UserRole
 from app.models.user import User
+from app.security.http import auth_rate_limiter
 from app.security.passwords import hash_password
 
 engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -25,6 +27,7 @@ TestingSession = sessionmaker(bind=engine, expire_on_commit=False)
 
 @pytest.fixture()
 def client():
+    auth_rate_limiter.clear()
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     with TestingSession() as db:

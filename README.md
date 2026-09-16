@@ -1,223 +1,118 @@
 # TaskFlow
 
-TaskFlow é um mural compartilhado para organizar atividades acadêmicas por prazo, prioridade, status e categoria. O backend usa FastAPI, SQLAlchemy 2, Alembic e SQLite; o frontend usa React, TypeScript e Vite.
+TaskFlow é um mural acadêmico preparado como **PUBLIC ALPHA** em arquitetura same-origin: um único serviço entrega React e FastAPI no mesmo domínio.
 
-## Funcionalidades
+## Arquitetura
 
-- Landing pública e login com identidade visual própria.
-- Sessão JWT em cookie `HttpOnly` e papéis `ADMIN` e `MEMBER`.
-- Cadastro de alunos exclusivamente por convite individual de uso único.
-- Dashboard, busca, filtros, calendário, estatísticas e CRUD administrativo.
-- Integração administrativa de leitura com calendários Google selecionados.
-- Sincronização manual, incremental, webhook HTTPS e polling opcional.
+```text
+Browser ─HTTPS→ FastAPI ─┬─ /api/* → SQLAlchemy → PostgreSQL
+                         ├─ /assets → frontend compilado
+                         └─ demais rotas → React SPA
+```
 
-## Instalação
+Em desenvolvimento, Vite (`localhost:5173`) encaminha `/api` ao FastAPI (`localhost:8000`). Em produção, FastAPI serve `frontend/dist`. Uma `/api/*` inexistente continua 404 JSON, nunca fallback SPA.
+
+## Desenvolvimento local
 
 Requisitos: Python 3.11+ e Node.js 20+.
 
 ```powershell
-cd "C:\caminho\para\TaskFlow"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r backend\requirements-dev.txt
 Copy-Item .env.example backend\.env
-cd frontend
-npm install
-```
-
-Gere as chaves antes de iniciar:
-
-```powershell
-python -c "import secrets; print(secrets.token_urlsafe(48))"
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-
-Use a primeira como `SECRET_KEY` e a segunda como `GOOGLE_TOKEN_ENCRYPTION_KEY` em `backend/.env`. Não reutilize nem versione essas chaves.
-
-## Banco de dados
-
-```powershell
 cd backend
-..\.venv\Scripts\python.exe -m alembic upgrade head
+python -m alembic upgrade head
+python -m uvicorn app.main:app --reload
 ```
 
-As migrations preservam usuários e tarefas existentes. Tarefas antigas passam a ter origem `MANUAL`.
-
-## Usuários e autorização
-
-Existem apenas dois papéis:
-
-- `ADMIN`: administra tarefas, convites e a integração Google Calendar.
-- `MEMBER`: aluno estritamente somente leitura.
-
-O backend protege `POST`, `PATCH` e `DELETE` de tarefas com `admin_user`; esconder controles no frontend é apenas uma camada de experiência.
-
-### Criar administrador
-
-```powershell
-cd backend
-..\.venv\Scripts\python.exe -m app.cli create-admin `
-  --email admin@exemplo.com `
-  --name "Administrador"
-```
-
-Administradores nunca são criados pelo endpoint público.
-
-### Convidar um aluno
-
-```powershell
-..\.venv\Scripts\python.exe -m app.cli create-member-invite `
-  --email aluno@exemplo.com `
-  --expires-days 7
-```
-
-Se houver mais de um administrador, é possível informar `--admin-email admin@exemplo.com`. O código original é exibido uma única vez; o banco guarda somente seu hash SHA-256. Entregue o código ao aluno por um canal apropriado.
-
-O aluno acessa `http://localhost:5173/first-access` e informa nome, o mesmo e-mail do convite, código, senha e confirmação. O endpoint `POST /api/auth/register-member` não aceita `role` e sempre cria `MEMBER`.
-
-## Execução local
-
-Terminal do backend:
-
-```powershell
-cd backend
-..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
-```
-
-Terminal do frontend:
+Em outro terminal:
 
 ```powershell
 cd frontend
+npm ci
 npm run dev
 ```
 
-- Aplicação: `http://localhost:5173`
-- OpenAPI: `http://localhost:8000/docs`
-- Saúde: `http://localhost:8000/api/health`
+Aplicação: `http://localhost:5173`; docs: `http://localhost:8000/docs`; saúde: `http://localhost:8000/api/health`. SQLite é permitido somente em desenvolvimento/testes e recusado em produção.
 
-## Google Calendar
+## Autenticação e banco
 
-A integração pertence ao administrador do TaskFlow. Alunos não conectam calendários pessoais. O escopo solicitado é somente `https://www.googleapis.com/auth/calendar.readonly`.
+A sessão JWT fica exclusivamente no cookie `taskflow_session`: `HttpOnly`, `SameSite=Lax`, `path=/`, expiração configurável e `Secure` obrigatório em produção. Nada é salvo em `localStorage` ou `sessionStorage`. `ADMIN` administra tarefas/convites; `MEMBER` é somente leitura.
 
-### 1. Preparar o Google Cloud
+SQLAlchemy 2 usa SQLite local ou PostgreSQL com psycopg 3. O container executa `python -m alembic upgrade head` antes do servidor. Isso é adequado a uma instância; antes de escalar, mova migrations para uma etapa única de release.
 
-1. Crie ou selecione um projeto no [Google Cloud Console](https://console.cloud.google.com/).
-2. Ative a [Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com).
-3. Configure a tela de consentimento OAuth.
-4. Crie credenciais OAuth do tipo **Aplicativo da Web**.
-5. Durante o desenvolvimento, adicione exatamente esta URI de redirecionamento autorizada:
+Crie o primeiro administrador explicitamente:
 
-```text
-http://localhost:8000/api/integrations/google-calendar/callback
+```bash
+python -m app.cli create-admin --email admin@exemplo.com --name "Administrador"
 ```
 
-6. Copie o client ID e client secret para `backend/.env`. Nunca use esses valores no frontend.
+A senha é solicitada sem eco. `TASKFLOW_ADMIN_PASSWORD` deve ser usado apenas em automação controlada e nunca persistido.
 
-### 2. Variáveis de ambiente
-
-```env
-FRONTEND_URL=http://localhost:5173
-APP_TIMEZONE=America/Fortaleza
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_REDIRECT_URI=http://localhost:8000/api/integrations/google-calendar/callback
-GOOGLE_CALENDAR_WEBHOOK_URL=
-GOOGLE_CALENDAR_WEBHOOK_TOKEN=
-GOOGLE_TOKEN_ENCRYPTION_KEY=
-GOOGLE_CALENDAR_SYNC_ENABLED=false
-GOOGLE_CALENDAR_SYNC_INTERVAL_MINUTES=5
-```
-
-`GOOGLE_CALENDAR_WEBHOOK_TOKEN` deve ser aleatório e diferente das demais chaves. O refresh token é criptografado com Fernet antes de ser persistido e nunca é retornado pela API.
-
-### 3. Conectar e selecionar calendários
-
-1. Entre como `ADMIN`.
-2. Abra **Integrações** na sidebar.
-3. Clique em **Conectar Google Calendar** e conclua o OAuth.
-4. Escolha explicitamente um calendário.
-5. Defina matéria/categoria e, opcionalmente, professor.
-6. Clique em **Adicionar fonte** e depois em **Sincronizar agora**.
-
-O TaskFlow não importa automaticamente todos os calendários. A lista da conta apenas permite selecionar fontes autorizadas.
-
-### Sincronização
-
-Na primeira sincronização, eventos dos últimos 30 dias em diante são importados e o `nextSyncToken` é persistido. Nas sincronizações seguintes, apenas mudanças são solicitadas. Se o Google invalidar o token com HTTP 410, somente as tarefas importadas daquele calendário são reconstruídas; tarefas manuais não são tocadas.
+## Testes
 
 ```powershell
 cd backend
-..\.venv\Scripts\python.exe -m app.cli sync-google-calendar
-```
-
-Eventos cancelados removem apenas a tarefa com origem `GOOGLE_CALENDAR` e identificadores externos correspondentes. Remover uma fonte não apaga tarefas já importadas.
-
-### Localhost, polling e webhooks
-
-Webhooks do Google Calendar exigem uma URL HTTPS pública com certificado válido. Eles não funcionam diretamente em `localhost`.
-
-No desenvolvimento, use **Sincronizar agora**, o comando CLI ou habilite polling para uma implantação simples de instância única:
-
-```env
-GOOGLE_CALENDAR_SYNC_ENABLED=true
-GOOGLE_CALENDAR_SYNC_INTERVAL_MINUTES=5
-```
-
-Em produção, configure:
-
-```env
-GOOGLE_CALENDAR_WEBHOOK_URL=https://seu-dominio.com/api/integrations/google-calendar/webhook
-GOOGLE_CALENDAR_WEBHOOK_TOKEN=token-aleatorio-forte
-```
-
-Ao criar uma fonte habilitada, o TaskFlow solicita um canal `watch`. O webhook valida token, channel ID e resource ID, responde rapidamente e executa sincronização incremental em segundo plano. Canais Google expiram; para recriar um canal no MVP, remova e adicione novamente a fonte. O polling pode permanecer como recuperação.
-
-Referências oficiais: [OAuth para aplicações web](https://developers.google.com/identity/protocols/oauth2/web-server), [sincronização incremental](https://developers.google.com/workspace/calendar/api/guides/sync) e [push notifications](https://developers.google.com/workspace/calendar/api/guides/push).
-
-## Endpoints principais
-
-### Autenticação
-
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `POST /api/auth/register-member`
-- `POST /api/auth/member-invites` — `ADMIN`
-- `GET /api/auth/member-invites` — `ADMIN`
-
-### Google Calendar
-
-- `GET /api/integrations/google-calendar/status`
-- `GET /api/integrations/google-calendar/connect`
-- `GET /api/integrations/google-calendar/callback`
-- `GET /api/integrations/google-calendar/calendars`
-- `POST /api/integrations/google-calendar/sources`
-- `PATCH /api/integrations/google-calendar/sources/{id}`
-- `DELETE /api/integrations/google-calendar/sources/{id}`
-- `POST /api/integrations/google-calendar/sync`
-- `POST /api/integrations/google-calendar/disconnect`
-- `POST /api/integrations/google-calendar/webhook`
-
-Todos os endpoints de configuração exigem `ADMIN`. O callback exige a sessão administrativa e um estado OAuth assinado. O webhook usa autenticação própria por headers e token.
-
-## Qualidade
-
-```powershell
-cd backend
-..\.venv\Scripts\python.exe -m pytest
-..\.venv\Scripts\python.exe -m ruff check .
-
+python -m pytest
+python -m ruff check .
 cd ..\frontend
 npm test
+npm run test:coverage
 npm run lint
 npm run build
+npm run test:e2e
 ```
 
-Os testes Google usam um gateway simulado e não acessam a internet nem uma conta real.
+O E2E usa SQLite temporário e não acessa APIs Google.
 
-## Limitações operacionais
+## Produção local com PostgreSQL
 
-- O polling embutido é adequado apenas a uma implantação simples de instância única.
-- Renovação automática de canais `watch` ainda não é agendada; recrie a fonte antes/depois da expiração ou use polling.
-- A integração mantém uma única conta Google administrativa por instalação.
-- SQLite é adequado ao MVP; produção concorrente deve usar PostgreSQL e um worker/scheduler dedicado.
+Crie um `.env` local ignorado pelo Git:
+
+```env
+POSTGRES_PASSWORD=uma-senha-local-forte
+SECRET_KEY=um-segredo-local-com-pelo-menos-32-caracteres
+```
+
+Execute `docker compose up --build`. A stack oferece PostgreSQL, migrations e aplicação na porta 8000. O Compose mantém cookies seguros e URL HTTPS; para testar login no navegador, use um proxy TLS local. Health e páginas públicas podem ser inspecionados diretamente por HTTP.
+
+## Produção
+
+```env
+ENVIRONMENT=production
+DATABASE_URL=postgresql://usuario:senha@host/banco
+SECRET_KEY=<segredo aleatório forte>
+COOKIE_SECURE=true
+FRONTEND_URL=https://seu-dominio
+CORS_ORIGINS=https://seu-dominio
+ENABLE_GOOGLE_INTEGRATION=false
+GOOGLE_CALENDAR_SYNC_ENABLED=false
+```
+
+URLs `postgresql://`/`postgres://` são normalizadas para psycopg. Gere o segredo com `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Produção recusa segredo padrão, SQLite, cookie inseguro, frontend sem HTTPS e CORS curinga; docs públicas e debug ficam desativados.
+
+## Segurança do alpha
+
+- Validação estrita de `Origin` presente em POST/PUT/PATCH/DELETE e CORS restritivo.
+- Rate limit local por IP para login e cadastro por convite.
+- CSP sem `unsafe-eval`, frame protection, `nosniff`, Referrer/Permissions Policy e HSTS em produção.
+- `style-src 'unsafe-inline'` é a exceção documentada: React calcula larguras de barras/progresso via atributo `style`; scripts inline permanecem proibidos.
+- O IP vem do Uvicorn; forwarded headers só são aceitos dos proxies configurados em `FORWARDED_ALLOW_IPS`.
+
+O rate limit local não escala horizontalmente; use armazenamento compartilhado antes de adicionar instâncias.
+
+## Deploy
+
+O alvo é um Render Web Service Docker e Render PostgreSQL. Veja [DEPLOYMENT.md](DEPLOYMENT.md). O código não depende de `onrender.com` e aceita domínio próprio.
+
+## Experimental / fora do escopo atual
+
+Google Calendar e Classroom Bridge estão preservados, mas desligados por `ENABLE_GOOGLE_INTEGRATION=false`: rotas não são registradas, polling não inicia, sidebar não mostra integrações e secrets Google não são exigidos. Para desenvolvimento futuro da UI, compile também com `VITE_ENABLE_GOOGLE_INTEGRATION=true`.
+
+## Limitações
+
+- Rate limit e polling são locais à instância.
+- Migrations rodam no startup.
+- Compose não inclui proxy TLS.
+- Google/Classroom permanecem experimentais e fora da primeira publicação.

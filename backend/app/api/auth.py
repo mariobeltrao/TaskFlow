@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from app.schemas.auth import (
     MemberRegistration,
     UserResponse,
 )
+from app.security.http import auth_rate_limiter
 from app.security.passwords import verify_password
 from app.security.tokens import create_access_token
 from app.services.member_invite_service import MemberInviteService
@@ -22,13 +23,23 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/login", response_model=UserResponse)
-def login(data: LoginRequest, response: Response, db: Session = Depends(get_db)) -> User:
+def login(
+    data: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)
+) -> User:
+    settings = get_settings()
+    client_host = request.client.host if request.client else "unknown"
+    if not auth_rate_limiter.check(
+        f"login:{client_host}",
+        settings.auth_rate_limit_attempts,
+        settings.auth_rate_limit_window_seconds,
+    ):
+        raise HTTPException(status_code=429, detail="Muitas tentativas; tente novamente mais tarde")
     user = db.scalar(select(User).where(User.email == data.email.lower()))
     if not user or not verify_password(data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas"
         )
-    settings = get_settings()
+    auth_rate_limiter.reset(f"login:{client_host}")
     response.set_cookie(
         "taskflow_session",
         create_access_token(user.id),
@@ -43,7 +54,10 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(response: Response) -> None:
-    response.delete_cookie("taskflow_session", path="/")
+    settings = get_settings()
+    response.delete_cookie(
+        "taskflow_session", path="/", secure=settings.cookie_secure, httponly=True, samesite="lax"
+    )
 
 
 @router.get("/me", response_model=UserResponse)
@@ -52,8 +66,20 @@ def me(user: User = Depends(current_user)) -> User:
 
 
 @router.post("/register-member", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register_member(data: MemberRegistration, db: Session = Depends(get_db)) -> User:
-    return MemberInviteService(db).register(data)
+def register_member(
+    data: MemberRegistration, request: Request, db: Session = Depends(get_db)
+) -> User:
+    settings = get_settings()
+    client_host = request.client.host if request.client else "unknown"
+    if not auth_rate_limiter.check(
+        f"register:{client_host}",
+        settings.auth_rate_limit_attempts,
+        settings.auth_rate_limit_window_seconds,
+    ):
+        raise HTTPException(status_code=429, detail="Muitas tentativas; tente novamente mais tarde")
+    user = MemberInviteService(db).register(data)
+    auth_rate_limiter.reset(f"register:{client_host}")
+    return user
 
 
 @router.post(

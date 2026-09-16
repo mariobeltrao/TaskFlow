@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: taskflow
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskflow -d taskflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - taskflow_postgres_data:/var/lib/postgresql/data
+
+  taskflow:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql://taskflow:${POSTGRES_PASSWORD}@postgres:5432/taskflow
+      SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY}
+      COOKIE_SECURE: "true"
+      FRONTEND_URL: ${FRONTEND_URL:-https://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://localhost:8000}
+      ENABLE_GOOGLE_INTEGRATION: "false"
+      GOOGLE_CALENDAR_SYNC_ENABLED: "false"
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
+      PORT: "8000"
+    ports:
+      - "8000:8000"
+
+volumes:
+  taskflow_postgres_data:

@@ -13,6 +13,7 @@ import {formatDate,localDate} from './utils/dates';
 
 type View='overview'|'all'|'upcoming'|'completed'|'calendar'|'stats'|'integrations';
 const nav:[View,string,React.ElementType][]=[['overview','Visão Geral',LayoutDashboard],['all','Todas as Tarefas',ListTodo],['upcoming','Próximas',Clock3],['completed','Concluídas',CheckCircle2],['calendar','Calendário',CalendarDays],['stats','Estatísticas',BarChart3]];
+const googleIntegrationEnabled=import.meta.env.VITE_ENABLE_GOOGLE_INTEGRATION==='true';
 const go=(path:string)=>{history.pushState({},'',path);window.dispatchEvent(new PopStateEvent('popstate'))};
 
 export default function App(){
@@ -22,15 +23,17 @@ export default function App(){
   const load=useCallback(async()=>{if(!user)return;const suffix=view==='upcoming'?'?upcoming=true':view==='completed'?'?status=COMPLETED':'';try{const[t,s]=await Promise.all([api.tasks(suffix),api.summary()]);setTasks(t.items);setSummary(s);setError('')}catch(e){setError(e instanceof Error?e.message:'Erro ao carregar')}},[user,view]);
   useEffect(()=>{const update=()=>setPath(location.pathname);window.addEventListener('popstate',update);return()=>window.removeEventListener('popstate',update)},[]);
   useEffect(()=>{api.me().then(u=>{setUser(u);if(location.pathname==='/'||location.pathname==='/login')go('/app')}).catch(()=>setUser(null)).finally(()=>setLoading(false))},[]);
+  useEffect(()=>{const expire=()=>{setUser(null);go('/login')};window.addEventListener('taskflow:unauthorized',expire);return()=>window.removeEventListener('taskflow:unauthorized',expire)},[]);
   // A troca de visualização sincroniza os dados remotos exibidos no mural.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(()=>{void load()},[load]);
   const shown=useMemo(()=>tasks.filter(t=>t.title.toLowerCase().includes(search.toLowerCase())),[tasks,search]);
   const isAdmin=user?.role==='ADMIN';
-  const visibleNav:[View,string,React.ElementType][]=isAdmin?[...nav,['integrations','Integrações',Link2]]:nav;
+  const activeView:View=(!isAdmin||!googleIntegrationEnabled)&&view==='integrations'?'overview':view;
+  const visibleNav:[View,string,React.ElementType][]=isAdmin&&googleIntegrationEnabled?[...nav,['integrations','Integrações',Link2]]:nav;
   const save=async(data:TaskInput)=>{if(editing)await api.update(editing.id,data);else await api.create(data);await load()};
-  const remove=async(id:number)=>{if(confirm('Excluir esta tarefa?')){await api.remove(id);await load()}};
-  const complete=async(t:Task)=>{await api.update(t.id,{status:t.status==='COMPLETED'?'PENDING':'COMPLETED'});await load()};
+  const remove=async(id:number)=>{if(confirm('Excluir esta tarefa?'))try{await api.remove(id);await load()}catch(caught){setError(caught instanceof Error?caught.message:'Erro ao excluir')}};
+  const complete=async(t:Task)=>{try{await api.update(t.id,{status:t.status==='COMPLETED'?'PENDING':'COMPLETED'});await load()}catch(caught){setError(caught instanceof Error?caught.message:'Erro ao atualizar')}};
   if(loading)return <div className="splash"><Brand/><span>Preparando seu fluxo…</span></div>;
   if(!user){if(path==='/first-access')return <MemberFirstAccess onBack={()=>go('/login')} onComplete={()=>go('/login')}/>;if(path==='/login'||path.startsWith('/app'))return <Login onLogin={u=>{setUser(u);go('/app')}} onBack={()=>go('/')} onFirstAccess={()=>go('/first-access')}/>;return <Landing onLogin={()=>go('/login')}/>}
 
@@ -40,18 +43,18 @@ export default function App(){
     <aside className={menu?'open':''}>
       <div className="sidebar-brand"><Brand compact/><button className="mobile-close icon-button" aria-label="Fechar menu" onClick={()=>setMenu(false)}><X/></button></div>
       <div className="sidebar-label">Seu espaço</div>
-      <nav aria-label="Área autenticada">{visibleNav.map(([key,label,Icon])=><button key={key} className={view===key?'active':''} onClick={()=>{setView(key);setMenu(false)}}><Icon/>{label}{view===key&&<span/>}</button>)}</nav>
+      <nav aria-label="Área autenticada">{visibleNav.map(([key,label,Icon])=><button key={key} className={activeView===key?'active':''} onClick={()=>{setView(key);setMenu(false)}}><Icon/>{label}{activeView===key&&<span/>}</button>)}</nav>
       <div className="sidebar-note"><span>FLUXO DA SEMANA</span><strong>{summary?.completed_tasks??0} concluídas</strong><div><i style={{width:`${summary?.total_tasks?summary.completed_tasks/summary.total_tasks*100:0}%`}}/></div></div>
-      <div className="profile"><div className="avatar">{user.name.slice(0,2).toUpperCase()}</div><div><b>{user.name}</b><small>{isAdmin?'Administrador':'Aluno'}</small></div><button className="icon-button" aria-label="Sair" title="Sair" onClick={async()=>{await api.logout();setUser(null);go('/login')}}><LogOut/></button></div>
+      <div className="profile"><div className="avatar">{user.name.slice(0,2).toUpperCase()}</div><div><b>{user.name}</b><small>{isAdmin?'Administrador':'Aluno'}</small></div><button className="icon-button" aria-label="Sair" title="Sair" onClick={async()=>{try{await api.logout()}finally{setUser(null);go('/login')}}}><LogOut/></button></div>
     </aside>
     {menu&&<button className="menu-scrim" aria-label="Fechar menu" onClick={()=>setMenu(false)}/>} 
     <main className="content">
-      <header className="app-header"><button className="menu-button icon-button" aria-label="Abrir menu" onClick={()=>setMenu(true)}><Menu/></button><div><span className="eyebrow">{today}</span><h1>{view==='overview'?<>Olá, {user.name.split(' ')[0]}.</>:visibleNav.find(n=>n[0]===view)?.[1]??'Visão Geral'}</h1></div>{isAdmin&&view!=='integrations'&&<button className="button button-ink" onClick={()=>setEditing(null)}><Plus/> Nova tarefa</button>}</header>
+      <header className="app-header"><button className="menu-button icon-button" aria-label="Abrir menu" onClick={()=>setMenu(true)}><Menu/></button><div><span className="eyebrow">{today}</span><h1>{activeView==='overview'?<>Olá, {user.name.split(' ')[0]}.</>:visibleNav.find(n=>n[0]===activeView)?.[1]??'Visão Geral'}</h1></div>{isAdmin&&activeView!=='integrations'&&<button className="button button-ink" onClick={()=>setEditing(null)}><Plus/> Nova tarefa</button>}</header>
       {error&&<div className="error-banner" role="alert">{error}<button aria-label="Fechar aviso" onClick={()=>setError('')}>×</button></div>}
-      {view==='overview'&&<Overview summary={summary} pending={pending}/>} 
-      {view==='integrations'&&isAdmin?<GoogleCalendarIntegration/>:view==='calendar'?<Calendar tasks={shown} month={month} setMonth={setMonth}/>:view==='stats'?<Statistics summary={summary}/>:<section className="tasks-section">
-        <div className="section-head"><div><span className="eyebrow">{view==='overview'?'Organize sua semana':'Seu mural'}</span><h2>{view==='overview'?'Próximas entregas':visibleNav.find(n=>n[0]===view)?.[1]}</h2></div><label className="search"><Search/><input aria-label="Buscar tarefa" placeholder="Buscar uma tarefa…" value={search} onChange={e=>setSearch(e.target.value)}/></label></div>
-        <div className="task-list">{shown.length?shown.slice(0,view==='overview'?6:100).map(t=><TaskCard key={t.id} task={t} isAdmin={isAdmin} onEdit={setEditing} onDelete={remove} onComplete={complete}/>):<div className="empty"><CheckCircle2/><h3>Tudo limpo por aqui.</h3><p>Nenhuma tarefa corresponde a esta visualização.</p></div>}</div>
+      {activeView==='overview'&&<Overview summary={summary} pending={pending}/>}
+      {activeView==='integrations'&&isAdmin?<GoogleCalendarIntegration/>:activeView==='calendar'?<Calendar tasks={shown} month={month} setMonth={setMonth}/>:activeView==='stats'?<Statistics summary={summary}/>:<section className="tasks-section">
+        <div className="section-head"><div><span className="eyebrow">{activeView==='overview'?'Organize sua semana':'Seu mural'}</span><h2>{activeView==='overview'?'Próximas entregas':visibleNav.find(n=>n[0]===activeView)?.[1]}</h2></div><label className="search"><Search/><input aria-label="Buscar tarefa" placeholder="Buscar uma tarefa…" value={search} onChange={e=>setSearch(e.target.value)}/></label></div>
+        <div className="task-list">{shown.length?shown.slice(0,activeView==='overview'?6:100).map(t=><TaskCard key={t.id} task={t} isAdmin={isAdmin} onEdit={setEditing} onDelete={remove} onComplete={complete}/>):<div className="empty"><CheckCircle2/><h3>Tudo limpo por aqui.</h3><p>Nenhuma tarefa corresponde a esta visualização.</p></div>}</div>
       </section>}
     </main>
     {editing!==undefined&&<TaskForm task={editing} onClose={()=>setEditing(undefined)} onSave={save}/>} 
