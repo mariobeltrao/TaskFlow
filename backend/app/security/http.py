@@ -79,12 +79,18 @@ auth_rate_limiter = AuthRateLimiter()
 
 def install_spa(app: FastAPI, dist_dir: Path) -> None:
     assets = dist_dir / "assets"
+    favicon = dist_dir / "favicon.svg"
     index = dist_dir / "index.html"
     if not index.is_file():
         logger.info("Frontend compilado não encontrado em %s; modo API", dist_dir)
         return
     if assets.is_dir():
         app.mount("/assets", StaticFiles(directory=assets), name="assets")
+    if favicon.is_file():
+
+        @app.get("/favicon.svg", include_in_schema=False)
+        async def favicon_file():
+            return FileResponse(favicon, media_type="image/svg+xml")
 
     @app.get("/{frontend_path:path}", include_in_schema=False)
     async def spa_fallback(frontend_path: str):

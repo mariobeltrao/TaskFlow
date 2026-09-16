@@ -87,6 +87,7 @@ def test_spa_fallback_and_assets(tmp_path: Path):
     assets = dist / "assets"
     assets.mkdir(parents=True)
     (dist / "index.html").write_text("<html>TaskFlow SPA</html>", encoding="utf-8")
+    (dist / "favicon.svg").write_text("<svg>TaskFlow icon</svg>", encoding="utf-8")
     (assets / "app.js").write_text("console.log('taskflow')", encoding="utf-8")
     test_app = FastAPI()
     install_spa(test_app, dist)
@@ -94,6 +95,10 @@ def test_spa_fallback_and_assets(tmp_path: Path):
         assert "TaskFlow SPA" in test_client.get("/app").text
         assert "TaskFlow SPA" in test_client.get("/login").text
         assert test_client.get("/assets/app.js").status_code == 200
+        favicon = test_client.get("/favicon.svg")
+        assert favicon.status_code == 200
+        assert favicon.headers["content-type"].startswith("image/svg+xml")
+        assert "TaskFlow icon" in favicon.text
         missing_api = test_client.get("/api/does-not-exist")
         assert missing_api.status_code == 404
         assert missing_api.headers["content-type"].startswith("application/json")
