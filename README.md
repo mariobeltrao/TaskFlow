@@ -75,7 +75,7 @@ POSTGRES_PASSWORD=uma-senha-local-forte
 SECRET_KEY=um-segredo-local-com-pelo-menos-32-caracteres
 ```
 
-Execute `docker compose up --build`. A stack oferece PostgreSQL, migrations e aplicação na porta 8000. O Compose mantém cookies seguros e URL HTTPS; para testar login no navegador, use um proxy TLS local. Health e páginas públicas podem ser inspecionados diretamente por HTTP.
+Execute `docker compose up --build`. A stack oferece PostgreSQL, migrations e aplicação completa em `http://localhost:8000`. O Compose usa configuração local (`ENVIRONMENT=development` e cookie sem `Secure`) apenas para permitir autenticação por HTTP; a imagem e a configuração documentada do Render continuam exigindo HTTPS e cookie seguro em produção.
 
 ## Produção
 

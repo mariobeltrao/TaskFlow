@@ -64,6 +64,9 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci-only-postgres-password
+      SECRET_KEY: ci-only-secret-key-with-more-than-thirty-two-characters
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -71,3 +74,9 @@ jobs:
         with:
           context: .
           push: false
+      - run: docker compose up --build --detach --wait
+      - run: curl --fail --silent http://localhost:8000/api/health
+      - run: curl --fail --silent http://localhost:8000/app > /dev/null
+      - run: test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost:8000/api/rota-inexistente)" = "404"
+      - if: always()
+        run: docker compose down --volumes

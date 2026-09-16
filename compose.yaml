@@ -19,12 +19,12 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      ENVIRONMENT: production
+      ENVIRONMENT: development
       DATABASE_URL: postgresql://taskflow:${POSTGRES_PASSWORD}@postgres:5432/taskflow
       SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY}
-      COOKIE_SECURE: "true"
-      FRONTEND_URL: ${FRONTEND_URL:-https://localhost:8000}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://localhost:8000}
+      COOKIE_SECURE: "false"
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8000}
       ENABLE_GOOGLE_INTEGRATION: "false"
       GOOGLE_CALENDAR_SYNC_ENABLED: "false"
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}

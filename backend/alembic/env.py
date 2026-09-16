@@ -1,6 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
 
 from alembic import context
 from app.core.config import get_settings
@@ -31,6 +31,22 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
+        # Revision 0002 predates PostgreSQL support and adds an enum column through
+        # batch_alter_table, which does not create the native enum type. Bootstrap
+        # the type idempotently without rewriting the already-versioned migration.
+        if connection.dialect.name == "postgresql":
+            connection.execute(
+                text(
+                    """
+                    DO $$ BEGIN
+                        CREATE TYPE tasksource AS ENUM ('MANUAL', 'GOOGLE_CALENDAR');
+                    EXCEPTION
+                        WHEN duplicate_object THEN NULL;
+                    END $$;
+                    """
+                )
+            )
+            connection.commit()
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
