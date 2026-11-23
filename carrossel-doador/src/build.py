@@ -26,10 +26,7 @@ def icone(nome):
 
 
 def logo():
-    p = OUT / "assets" / "logo-cruzeiro-do-sul.png"
-    if p.exists():
-        return '<div class="logo-slot logo-ok"><img src="assets/logo-cruzeiro-do-sul.png" alt="Cruzeiro do Sul"></div>'
-    return '<div class="logo-slot">Logo<br>Cruzeiro do Sul</div>'
+    return '<div class="logo-card"><img src="assets/logo-unipe.png" alt="UNIPÊ - Centro Universitário de João Pessoa"></div>'
 
 
 def pagina(n, bg, conteudo, extra_css="", swipe=True):
@@ -57,20 +54,20 @@ def pagina(n, bg, conteudo, extra_css="", swipe=True):
 pagina(1, "bg-amarelo", f"""
   <span class="tag">25 de novembro</span>
   <h1 class="capa-h1">Seu sangue pode ser o recomeço de alguém<span class="cursor">_</span></h1>
-  <p class="capa-sub">Dia Nacional do Doador Voluntário de Sangue</p>
-  <div class="capa-logo">{logo()}</div>
-  <div class="data-gota">{GOTA.format(cls="gg")}<span>25<br><small>NOV</small></span></div>
+  <div class="capa-base">
+    <div class="capa-esq">
+      <p class="capa-sub">Dia Nacional do Doador Voluntário de Sangue</p>
+      {logo()}
+    </div>
+  </div>
+  <img class="ilustra" src="assets/doador.svg" alt="">
 """, extra_css="""
-  .capa-h1{font-size:138px;max-width:820px;}
-  .capa-sub{font:700 42px/1.25 var(--f-corpo);margin-top:40px;max-width:700px;}
-  .capa-logo{margin-top:56px;}
-  .data-gota{position:absolute;right:70px;bottom:20px;width:230px;height:299px;}
-  .data-gota .gg{width:100%;height:100%;}
-  .data-gota .gg path{fill:var(--azul);}
-  .data-gota span{position:absolute;inset:112px 0 0;text-align:center;color:var(--amarelo);
-    font:800 96px/0.9 var(--f-titulo);font-variation-settings:"opsz" 96;}
-  .data-gota small{font:800 34px/1 var(--f-corpo);letter-spacing:.2em;}
-  .rodape .arraste{font-size:26px;}
+  .capa-h1{font-size:116px;max-width:900px;}
+  .capa-base{margin-top:48px;height:520px;}
+  .capa-esq{width:430px;display:flex;flex-direction:column;justify-content:flex-end;height:100%;gap:40px;}
+  .capa-sub{font:700 42px/1.25 var(--f-corpo);}
+  .ilustra{position:absolute;right:-70px;bottom:-30px;width:600px;height:600px;z-index:-1;}
+  .slide .ponte.dir{top:390px;}
 """)
 
 # 2 — POR QUE DOAR

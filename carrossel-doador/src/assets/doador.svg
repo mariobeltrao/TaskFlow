@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <!-- Ilustração: pessoa doando sangue (paleta oficial: #013380 #FED500 #FFED8E #DEDEDE + branco) -->
+  <g stroke="#013380" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+    <circle cx="300" cy="310" r="270" fill="#FFED8E" stroke="none"/>
+
+    <!-- brilhos -->
+    <path d="M300 92c0-18 26-18 26 0 0-18 26-18 26 0 0 22-26 34-26 34s-26-12-26-34z" fill="#FED500"/>
+    <path d="M70 300v24M58 312h24M545 360v20M535 370h20" fill="none"/>
+
+    <!-- suporte do soro -->
+    <path d="M490 105v410M455 105h70M440 525h100" fill="none" stroke-width="10"/>
+    <!-- bolsa de sangue -->
+    <rect x="448" y="118" width="88" height="124" rx="18" fill="#FFFFFF"/>
+    <rect x="456" y="152" width="72" height="82" rx="12" fill="#FED500" stroke-width="0"/>
+    <path d="M492 166s-14 16-14 26a14 14 0 0 0 28 0c0-10-14-26-14-26z" fill="#013380" stroke="none"/>
+    <path d="M478 118v-8h28v8" fill="none"/>
+    <!-- tubo -->
+    <path d="M492 242c0 70-90 118-176 92" fill="none" stroke-width="7"/>
+
+    <!-- cadeira -->
+    <rect x="410" y="485" width="0" height="0"/>
+    <path d="M262 446v62M205 516h118" fill="none" stroke-width="12"/>
+    <rect x="-38" y="-118" width="76" height="236" rx="34" fill="#DEDEDE" transform="translate(190 318) rotate(-24)"/>
+    <rect x="196" y="392" width="196" height="58" rx="22" fill="#DEDEDE"/>
+    <rect x="-20" y="-26" width="150" height="52" rx="22" fill="#DEDEDE" transform="translate(392 432) rotate(32)"/>
+    <rect x="268" y="344" width="170" height="24" rx="12" fill="#DEDEDE"/>
+
+    <!-- pernas -->
+    <rect x="226" y="358" width="176" height="52" rx="26" fill="#013380"/>
+    <rect x="-12" y="-25" width="150" height="50" rx="25" fill="#013380" transform="translate(394 386) rotate(36)"/>
+    <ellipse cx="508" cy="468" rx="34" ry="20" fill="#FFFFFF" transform="rotate(36 508 468)"/>
+
+    <!-- tronco -->
+    <rect x="-50" y="-88" width="104" height="182" rx="44" fill="#FED500" transform="translate(212 312) rotate(-24)"/>
+
+    <!-- braço estendido -->
+    <path d="M222 276L304 334L404 322" fill="none" stroke-width="48"/>
+    <path d="M222 276L304 334L404 322" fill="none" stroke="#FFFFFF" stroke-width="34"/>
+    <circle cx="222" cy="276" r="30" fill="#FED500"/>
+    <!-- curativo / agulha -->
+    <rect x="296" y="322" width="26" height="22" rx="5" fill="#FFFFFF" transform="rotate(-6 309 333)"/>
+    <!-- bolinha na mão -->
+    <circle cx="414" cy="320" r="22" fill="#FED500"/>
+
+    <!-- cabeça -->
+    <rect x="150" y="226" width="34" height="34" rx="10" fill="#FFFFFF"/>
+    <circle cx="168" cy="198" r="46" fill="#FFFFFF"/>
+    <path d="M124 206c-10-46 22-72 56-68 26 3 40 22 34 40-14-12-34-14-50-6-8 14-12 24-14 36-8-4-16 0-26-2z" fill="#013380"/>
+    <path d="M182 196q7 6 14 0" fill="none" stroke-width="5"/>
+    <path d="M186 220q10 8 20-2" fill="none" stroke-width="5"/>
+  </g>
+</svg>
