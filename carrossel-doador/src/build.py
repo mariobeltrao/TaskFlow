@@ -26,7 +26,7 @@ def icone(nome):
 
 
 def logo():
-    return '<div class="logo-card"><img src="assets/logo-unipe-azul.png" alt="UNIPÊ - Centro Universitário de João Pessoa"></div>'
+    return '<div class="logo-card"><img src="assets/logo-unipe-negativa.png" alt="UNIPÊ - Centro Universitário de João Pessoa"></div>'
 
 
 def pagina(n, bg, conteudo, extra_css="", swipe=True):
@@ -51,9 +51,9 @@ def pagina(n, bg, conteudo, extra_css="", swipe=True):
 
 
 # 1 — CAPA
-pagina(1, "bg-amarelo", f"""
+pagina(1, "bg-azul", f"""
   <span class="tag">25 de novembro</span>
-  <h1 class="capa-h1">Seu sangue pode ser o recomeço de alguém<span class="cursor">_</span></h1>
+  <h1 class="capa-h1">Seu sangue pode ser o <span class="destaque">recomeço</span> de alguém<span class="cursor">_</span></h1>
   <div class="capa-base">
     <div class="capa-esq">
       <p class="capa-sub">Dia Nacional do Doador Voluntário de Sangue</p>
@@ -153,7 +153,7 @@ pagina(7, "bg-claro", f"""
 """)
 
 # 8 — CTA
-pagina(8, "bg-amarelo", f"""
+pagina(8, "bg-azul", f"""
   <span class="tag">Faça parte</span>
   <h1 class="cta-h1">Agora é a sua vez<span class="cursor">_</span></h1>
   <ul class="acoes">
@@ -165,12 +165,12 @@ pagina(8, "bg-amarelo", f"""
 """, swipe=False, extra_css="""
   .cta-h1{font-size:132px;max-width:880px;margin-bottom:56px;}
   .acoes{list-style:none;display:flex;flex-direction:column;gap:26px;}
-  .acoes li{display:flex;align-items:center;gap:30px;background:var(--azul);color:var(--branco);border-radius:20px;padding:24px 30px;}
+  .acoes li{display:flex;align-items:center;gap:30px;background:rgba(255,255,255,.08);border-left:8px solid var(--amarelo);color:var(--branco);border-radius:20px;padding:24px 30px;}
   .acoes span{font:500 34px/1.25 var(--f-corpo);}
   .acoes b{font-weight:800;color:var(--amarelo);}
   .acoes .icone{flex-basis:84px;height:84px;}
   .cta-base{display:flex;align-items:center;justify-content:space-between;margin-top:56px;}
-  .hash{font:800 40px/1 var(--f-titulo);font-variation-settings:"opsz" 96;}
+  .hash{color:var(--amarelo);font:800 40px/1 var(--f-titulo);font-variation-settings:"opsz" 96;}
 """)
 
 print("ok")
