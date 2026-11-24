@@ -26,7 +26,7 @@ def icone(nome):
 
 
 def logo():
-    return '<div class="logo-card"><img src="assets/logo-unipe.png" alt="UNIPÊ - Centro Universitário de João Pessoa"></div>'
+    return '<div class="logo-card"><img src="assets/logo-unipe-azul.png" alt="UNIPÊ - Centro Universitário de João Pessoa"></div>'
 
 
 def pagina(n, bg, conteudo, extra_css="", swipe=True):
